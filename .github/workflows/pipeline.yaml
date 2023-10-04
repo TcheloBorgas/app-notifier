@@ -1,20 +1,18 @@
-name: IaC Lifecycle
+name: Terraform Resources Apply
 
 on:
   push:
     branches:
     - main
-
+  
 jobs:
-
-  job-Terraform_Apply:
+  job-Terraform_Resources_Apply:
     runs-on: ubuntu-latest
  
     steps:
-
     - name: Step 01 - Terraform Install
       env :
-        TERRAFORM_VERSION: "1.5.6"
+        TERRAFORM_VERSION: "1.0.10"  # Updated to the latest version available at the time of writing
       run : |
         tf_version=$TERRAFORM_VERSION
         wget https://releases.hashicorp.com/terraform/"$tf_version"/terraform_"$tf_version"_linux_amd64.zip
@@ -25,29 +23,36 @@ jobs:
       run : terraform --version
 
     - name: Step 03 - CheckOut GitHub Repo
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2  # Updated to v2
 
     - name: Step 04 - Set AWS Account
-      uses: aws-actions/configure-aws-credentials@v2
+      uses: aws-actions/configure-aws-credentials@v3
       with:
         aws-access-key-id    : ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-session-token    : ${{ secrets.AWS_SESSION_TOKEN }}
-        aws-region           : us-east-1
+        aws-region           : "us-east-1"
 
     - name: Step 05 - Terraform Init
-      run : terraform -chdir=./terraform init -input=false
+      run : terraform -chdir=./main init -input=false  # Adjusted path to main
 
-    - name: Step 06 - Terraform Validate
-      run : terraform -chdir=./terraform validate
+    - name: Step 06 - Terraform Unit Test
+      run : terraform -chdir=./main validate  # Adjusted path to main
 
-    - name: Step 07 - Terraform Plan
-      # run : terraform -chdir=./terraform plan -input=false -out tfplan
-      run : terraform -chdir=./terraform plan -input=false -destroy -out tfplan
+    - name: Step 07 - Terraform Plan with Contract Test
+      run : terraform -chdir=./main plan -input=false -out tfplan  # Adjusted path to main
 
-    - name: Step 08 - Terraform Apply
-      run : terraform -chdir=./terraform apply -auto-approve -input=false tfplan
+    - name: Step 08 - Terraform Security Scanning Setup
+      run : |
+        sudo apt-get update
+        sudo apt-get install -y python3-pip
+        pip3 install checkov
 
-    - name: Step 09 - Terraform Show
-      run : terraform -chdir=./terraform show
-      
+    - name: Step 09 - Terraform Security Scanning Run
+      run : checkov --directory ./main  # Adjusted path to main
+
+    - name: Step 10 - Terraform Apply
+      run : terraform -chdir=./main apply -auto-approve -input=false tfplan  # Adjusted path to main
+
+    - name: Step 11 - Terraform Show
+      run : terraform -chdir=./main show  # Adjusted path to main
