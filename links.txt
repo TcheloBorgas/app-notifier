@@ -1,4 +1,4 @@
-https://github.com/TcheloBorgas/app-notifier/actions/runs/6412588315/job/17411217986
+https://github.com/TcheloBorgas/app-notifier/actions/runs/6413040425
 
 
 checkov
